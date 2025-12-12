@@ -1,14 +1,16 @@
 # database.py
 import sqlite3
 
-DATABASE_NAME = 'celestium.db'
+DATABASE_NAME = "celestium.db"
+
 
 def init_db():
     conn = sqlite3.connect(DATABASE_NAME)
     c = conn.cursor()
-    
+
     # Table to store quiz results for AI recommendations
-    c.execute('''
+    c.execute(
+        """
         CREATE TABLE IF NOT EXISTS quiz_results (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             topic TEXT NOT NULL,
@@ -16,11 +18,13 @@ def init_db():
             total_questions INTEGER NOT NULL,
             completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    ''')
-    
+    """
+    )
+
     conn.commit()
     conn.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     init_db()
     print("Database Initialized! A 'celestium.db' file has been created.")
