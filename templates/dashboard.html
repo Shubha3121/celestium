@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Dashboard - Celestium</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 20px;
+            color: white;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .summary-card {
+            background: #1a1a2e;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #4facfe;
+        }
+        .summary-card h3 {
+            color: #ffcc00;
+            margin-top: 0;
+            font-size: 1rem;
+            text-transform: uppercase;
+        }
+        .score-value {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #4facfe;
+            margin-top: 5px;
+        }
+        .chart-area {
+            background: #1a1a2e;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 40px;
+        }
+        #history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        #history-table th, #history-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        #history-table th {
+            background: #2a2a3a;
+            color: #4facfe;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">Celestium</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/universe">Universe Explorer</a>
+            <a href="/lessons">LearnCore</a>
+            <a href="/quizzes">Quiz Zone</a>
+            <a href="/missions">Mission Builder</a>
+            <a href="/dashboard" style="color: #4facfe;">Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <h1 style="text-align: center; color: #4facfe; margin-bottom: 40px;">AI Learning Dashboard</h1>
+        
+        <div class="summary-grid">
+            <div class="summary-card" id="card-total-quizzes">
+                <h3>Quizzes Completed</h3>
+                <div class="score-value" id="total-quizzes">0</div>
+            </div>
+            <div class="summary-card" id="card-highest-score" style="border-left-color: #2ecc71;">
+                <h3>Highest Mastery</h3>
+                <div class="score-value" id="highest-mastery">0%</div>
+            </div>
+            <div class="summary-card" id="card-avg-score" style="border-left-color: #ffcc00;">
+                <h3>Average Score</h3>
+                <div class="score-value" id="average-score">0 / 0</div>
+            </div>
+        </div>
+
+        <div class="chart-area">
+            <h3 style="color: #ffcc00; margin-bottom: 20px;">Mastery Progression</h3>
+            <canvas id="masteryChart" width="400" height="150"></canvas>
+        </div>
+
+        <div class="history-area">
+            <h2 style="color: #4facfe;">Quiz History</h2>
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Topic</th>
+                        <th>Score</th>
+                        <th>Mastery</th>
+                        <th>AI Difficulty</th>
+                    </tr>
+                </thead>
+                <tbody id="history-body">
+                    </tbody>
+            </table>
+            <p id="loading-history" style="text-align: center; color: #888;">Loading data from database...</p>
+        </div>
+    </div>
+
+    <script>
+        let quizData = [];
+
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/quiz_history');
+                quizData = await response.json();
+                document.getElementById('loading-history').style.display = 'none';
+
+                if (quizData.length === 0) {
+                    document.getElementById('history-body').innerHTML = '<tr><td colspan="5" style="text-align:center;">No quiz results found. Complete a quiz to see your progress!</td></tr>';
+                    return;
+                }
+
+                renderSummary();
+                renderHistoryTable();
+                renderChart();
+
+            } catch (error) {
+                console.error("Error loading dashboard data:", error);
+                document.getElementById('loading-history').innerText = 'Error loading history. Is the server running?';
+            }
+        }
+
+        function renderSummary() {
+            const totalQuizzes = quizData.length;
+            const totalScore = quizData.reduce((sum, item) => sum + item.score, 0);
+            const totalMax = quizData.reduce((sum, item) => sum + item.total, 0);
+            
+            const overallMastery = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
+            const highestMastery = quizData.reduce((max, item) => Math.max(max, item.mastery), 0);
+            
+            document.getElementById('total-quizzes').innerText = totalQuizzes;
+            document.getElementById('highest-mastery').innerText = `${Math.round(highestMastery)}%`;
+            document.getElementById('average-score').innerText = `${Math.round(overallMastery)}%`;
+        }
+
+        function renderHistoryTable() {
+            const tbody = document.getElementById('history-body');
+            tbody.innerHTML = '';
+
+            quizData.forEach(item => {
+                const row = tbody.insertRow();
+                
+                // Format date as DD MMM YYYY HH:MM
+                const date = new Date(item.completed_at);
+                const dateString = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + 
+                                   date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+                row.insertCell().innerText = dateString;
+                row.insertCell().innerText = item.topic;
+                row.insertCell().innerText = `${item.score} / ${item.total}`;
+                row.insertCell().innerText = `${item.mastery}%`;
+                
+                // Color-code difficulty
+                const diffCell = row.insertCell();
+                diffCell.innerText = item.difficulty;
+                if (item.difficulty === 'Advanced') diffCell.style.color = '#2ecc71';
+                else if (item.difficulty === 'Beginner') diffCell.style.color = '#e74c3c';
+                else diffCell.style.color = '#f39c12';
+            });
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('masteryChart').getContext('2d');
+            
+            // Prepare data: Limit to last 10 quizzes for chart clarity
+            const chartData = quizData.slice(0, 10).reverse();
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.map(item => item.topic.substring(0, 10) + '...'), // X-axis labels
+                    datasets: [{
+                        label: 'Mastery Percentage',
+                        data: chartData.map(item => item.mastery), // Y-axis data
+                        borderColor: '#4facfe',
+                        backgroundColor: 'rgba(79, 172, 254, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            title: { display: true, text: 'Mastery %', color: '#ccc' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#ccc' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#ccc' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: 'Quiz Performance Over Time', color: '#ffcc00' }
+                    }
+                }
+            });
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

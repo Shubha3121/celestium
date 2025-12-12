@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mission Builder - Celestium</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { background-color: #050505; color: white; font-family: 'Segoe UI', sans-serif; }
+        .mission-container { max-width: 900px; margin: 50px auto; padding: 30px; background: #1a1a2e; border-radius: 12px; border: 1px solid #444; }
+        .section-title { text-align: center; font-size: 2.5rem; margin-bottom: 10px; color: #fff; }
+        .subtitle { text-align: center; color: #888; margin-bottom: 30px; }
+
+        .mission-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+
+        .command-input-area { background: #161622; padding: 20px; border-radius: 8px; border: 1px solid #333; }
+        .command-input-area h3 { color: #4facfe; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 0; }
+        
+        #command-list { 
+            width: 100%; 
+            min-height: 200px; 
+            padding: 15px; 
+            background: #0d0d1a; 
+            color: #2ecc71; 
+            font-family: monospace; 
+            font-size: 1.1rem;
+            border: 1px solid #4facfe; 
+            border-radius: 4px; 
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+
+        .controls button { padding: 10px 15px; margin-right: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #run-mission-btn { background: #2ecc71; color: #000; }
+        #run-mission-btn:hover { background: #55f099; }
+        #reset-btn { background: #f39c12; color: #000; }
+        
+        .legend-area { background: #161622; padding: 20px; border-radius: 8px; border: 1px solid #333; }
+        .legend-area h3 { color: #ffcc00; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 0; }
+        .legend-item { margin-bottom: 10px; }
+        .legend-code { font-weight: bold; color: #00f2fe; margin-right: 10px; font-family: monospace; }
+        
+        .simulation-output { margin-top: 30px; padding: 20px; border-radius: 8px; font-weight: bold; font-size: 1.1rem; }
+        .status-success { background: #214332; color: #2ecc71; border: 1px solid #2ecc71; }
+        .status-failed, .status-incomplete { background: #432121; color: #e74c3c; border: 1px solid #e74c3c; }
+        .output-message { margin-top: 10px; font-weight: normal; font-size: 1rem; color: #ddd; }
+        
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">Celestium</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/universe">Universe Explorer</a>
+            <a href="/lessons">LearnCore</a>
+            <a href="/quizzes">Quiz Zone</a>
+            <a href="/dashboard">Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="mission-container">
+        <h1 class="section-title">Mission Builder</h1>
+        <p class="subtitle">Design, Simulate, and Test Rover Command Sequences for Mars Exploration.</p>
+
+        <div class="mission-grid">
+            
+            <div class="command-input-area">
+                <h3>Rover Command Sequence</h3>
+                <textarea id="command-list" placeholder="Enter commands separated by new lines or spaces (e.g., F R F A)"></textarea>
+                
+                <div class="controls">
+                    <button id="run-mission-btn">Run Mission Simulation</button>
+                    <button id="reset-btn">Reset</button>
+                </div>
+            </div>
+
+            <div class="legend-area">
+                <h3>Command Legend (4x4 Grid)</h3>
+                <div class="legend-item"><span class="legend-code">F</span> - Move *Forward* (Y + 1)</div>
+                <div class="legend-item"><span class="legend-code">R</span> - Move *Right* (X + 1)</div>
+                <div class="legend-item"><span class="legend-code">A</span> - *Analyze* Sample (No movement)</div>
+                <hr style="border-color:#333;">
+                <div class="legend-item" style="color:#2ecc71;">*Goal:* Reach (3, 2) (Sample Point 2)</div>
+                <div class="legend-item" style="color:#e74c3c;">*Obstacle:* Rocks at (2, 0) and (1, 1)</div>
+                <div class="legend-item">*Start:* (0, 0)</div>
+            </div>
+        </div>
+
+        
+      <div id="simulation-output" class="simulation-output" style="display: none;">
+    </div>
+
+<div id="path-log-container" style="margin-top: 30px; display: none;">
+    <h3 style="color:#00f2fe; border-bottom: 1px solid #00f2fe; padding-bottom: 10px;">Rover Path Log</h3>
+    <table id="path-log-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem;">
+        <thead>
+            <tr style="background: #222; color: #fff;">
+                <th style="padding: 10px;">#</th>
+                <th style="padding: 10px;">Command</th>
+                <th style="padding: 10px;">End Position (X, Y)</th>
+                <th style="padding: 10px;">Status</th>
+                <th style="padding: 10px;">Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+</div>
+
+<script>
+    // FIX: Wait for the entire page (DOM) to load before attempting to find elements
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // --- BUTTON REGISTRATION MOVED HERE ---
+        document.getElementById('run-mission-btn').addEventListener('click', runMission);
+        document.getElementById('reset-btn').addEventListener('click', resetSimulation);
+
+        function resetSimulation() {
+            document.getElementById('command-list').value = '';
+            const output = document.getElementById('simulation-output');
+            const logContainer = document.getElementById('path-log-container');
+            
+            output.style.display = 'none';
+            output.className = 'simulation-output';
+            
+            // Also hide and clear the new path log area
+            logContainer.style.display = 'none';
+            document.querySelector('#path-log-table tbody').innerHTML = '';
+        }
+
+        async function runMission() {
+            const commandListElem = document.getElementById('command-list');
+            const outputElem = document.getElementById('simulation-output');
+            const logContainer = document.getElementById('path-log-container');
+            const logTableBody = document.querySelector('#path-log-table tbody');
+            
+            // Clean and process input
+            const commands = commandListElem.value.toUpperCase().replace(/[,\s]+/g, ' ').trim().split(' ').filter(cmd => cmd.length > 0);
+
+            if (commands.length === 0) {
+                alert("Please enter a command sequence.");
+                return;
+            }
+
+            // Reset UI for new run
+            outputElem.innerHTML = 'Simulating...';
+            outputElem.style.display = 'block';
+            outputElem.className = 'simulation-output'; 
+            logContainer.style.display = 'none';
+            logTableBody.innerHTML = ''; 
+
+            try {
+                const response = await fetch('/api/simulate_mission', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ commands: commands })
+                });
+
+                const result = await response.json();
+                
+                let statusClass = '';
+                if (result.status === 'Success') {
+                    statusClass = 'status-success';
+                } else if (result.status === 'Failed') {
+                    statusClass = 'status-failed';
+                } else {
+                    statusClass = 'status-incomplete';
+                }
+
+                outputElem.className =`simulation-output ${statusClass}`;
+                outputElem.innerHTML = `
+                    <div style="font-size: 1.5rem; margin-bottom: 5px;">MISSION STATUS: ${result.status.toUpperCase()}</div>
+                    <div class="output-message">${result.message}</div>
+                `;
+                
+                // --- Step-by-Step Log Rendering ---
+                if (result.path_log && result.path_log.length > 0) {
+                    logContainer.style.display = 'block';
+                    
+                    // Add table rows
+                    result.path_log.forEach((step, index) => {
+                        let statusColor = '#2ecc71';
+                        if (step.status === 'Crashed' || step.status === 'Off Map') {
+                            statusColor = '#e74c3c';
+                        } else if (step.status === 'Goal') {
+                            statusColor = '#ffcc00';
+                        }
+
+                        const row = logTableBody.insertRow();
+                        row.style.background = index % 2 === 0 ? '#1a1a2e' : '#161622';
+                        
+                        row.innerHTML = `
+                            <td style="padding: 10px;">${index + 1}</td>
+                            <td style="padding: 10px; font-weight: bold; color: ${statusColor};">${step.command}</td>
+                            <td style="padding: 10px;">(${step.x}, ${step.y})</td>
+                            <td style="padding: 10px; color: ${statusColor};">${step.status.toUpperCase()}</td>
+                            <td style="padding: 10px;">${step.message}</td>
+                        `;
+                        
+                        // Stop logging after a failure/success event is found
+                        if (step.status === 'Crashed' || step.status === 'Off Map' || step.status === 'Goal') {
+                            // This uses a throw/catch pattern to break the forEach loop elegantly
+                            throw new Error("Log End"); 
+                        }
+                    });
+                }
+
+
+            } catch (error) {
+                // Ignore the "Log End" break, handle other errors
+                if (error.message !== "Log End") { 
+                     console.error('Simulation Error:', error);
+                     outputElem.className = 'simulation-output status-failed';
+                     outputElem.innerHTML = '<div style="font-size: 1.5rem; margin-bottom: 5px;">SYSTEM ERROR</div><div class="output-message">Could not connect to the Python backend. Check server logs.</div>';
+                }
+            }
+        }
+    }); // End of DOMContentLoaded listener
+</script>
+
+</body>
+</html>

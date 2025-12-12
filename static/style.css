@@ -1,0 +1,128 @@
+/* Reset & Dark Theme */
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #000;
+    color: white;
+    overflow-x: hidden;
+}
+
+/* Navigation Bar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background-color: rgba(20, 20, 30, 0.9);
+    border-bottom: 1px solid #444;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000; /* Ensure nav stays on top of 3D canvas */
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #4facfe;
+    text-transform: uppercase;
+}
+
+.nav-links a {
+    color: #ddd;
+    text-decoration: none;
+    margin-left: 20px;
+    font-size: 16px;
+    transition: color 0.3s;
+}
+
+.nav-links a:hover {
+    color: #4facfe;
+}
+
+/* 3D Container */
+#canvas-container {
+    width: 100%;
+    height: 100vh; /* Full screen */
+    display: block;
+}
+
+
+#info-box {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    
+    /* IMPORTANT: Limit width so it doesn't block clicks in the center */
+    width: 300px; 
+    max-width: 80%;
+    
+    /* Optional: Ensure clicks pass through empty areas if needed */
+    pointer-events: none; 
+}
+/* Modal Background */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0; 
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 10, 20, 0.85);
+    backdrop-filter: blur(4px);
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+/* Modal Box */
+.modal-content {
+    background: #0a0f1f;
+    padding: 30px;
+    width: 350px;
+    border-radius: 12px;
+    border: 1px solid #4facfe;
+    box-shadow: 0 0 20px rgba(79, 172, 254, 0.6);
+    text-align: center;
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+    color: #4facfe;
+}
+
+.modal-content input {
+    width: 90%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 6px;
+    border: 1px solid #4facfe;
+    background: rgba(255,255,255,0.05);
+    color: white;
+}
+
+.modal-content button {
+    width: 100%;
+    padding: 12px;
+    background: #4facfe;
+    border: none;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 6px;
+    margin-top: 10px;
+}
+
+.modal-content button:hover {
+    background: #00f2fe;
+}
+
+.switch-link {
+    color: #4facfe;
+    cursor: pointer;
+    margin-top: 10px;
+}

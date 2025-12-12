@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Celestium - Infinite Horizons</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        body { margin: 0; background: #000; color: white; font-family: 'Segoe UI', sans-serif; }
+        .hero {
+            height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+                url('{{ url_for("static", filename="textures/stars.jpg") }}');
+            background-size: cover; text-align: center;
+        }
+        h1 { font-size: 4rem; margin-bottom: 10px;
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .btn { padding: 15px 30px; font-size: 1.2rem; background: #4facfe;
+            color: white; text-decoration: none; border-radius: 30px; margin-top: 20px;
+            transition: 0.3s; }
+        .btn:hover { background: #00f2fe; transform: scale(1.05); }
+
+        /* Modal styling */
+        .modal {
+            display:none; position: fixed; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.6); justify-content:center; align-items:center;
+        }
+        .modal-content {
+            background:#0b1220; padding:30px; border-radius:12px;
+            width:350px; text-align:center; box-shadow:0 0 20px #4facfe;
+        }
+        input {
+            width:90%; padding:10px; margin:10px 0;
+            border-radius:8px; border:1px solid #4facfe; background:#111827; color:white;
+        }
+        button {
+            width:94%; padding:10px; margin-top:10px;
+            background:#4facfe; border:none; border-radius:8px;
+            font-size:16px; cursor:pointer;
+        }
+        button:hover { background:#00f2fe; }
+
+        .password-wrapper { position:relative; }
+        .toggle-eye {
+            position:absolute; right:15px; top:50%; transform:translateY(-50%);
+            cursor:pointer; font-size:18px;
+        }
+        .switch-link { cursor:pointer; margin-top:10px; color:#4facfe; }
+    </style>
+
+    <!-- ONLY COMPAT SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">Celestium</div>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/universe">Universe Explorer</a>
+            <a href="/lessons">LearnCore</a>
+            <a href="/quizzes">Quiz Zone</a>
+            <a href="/missions">Mission Builder</a>
+            <a href="/dashboard">dashboard</a>
+            <a href="#" id="loginBtn">Login</a>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <h1>CELESTIUM</h1>
+        <p style="font-size: 1.5rem;">Experience the Cosmos. Powered by NASA Data.</p>
+        <a href="/universe" class="btn">Launch Universe Explorer</a>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>Login</h2>
+
+            <input id="loginEmail" type="email" placeholder="Email">
+
+            <div class="password-wrapper">
+                <input id="loginPassword" type="password" placeholder="Password">
+                <span class="toggle-eye" onclick="togglePassword('loginPassword', this)">👁️</span>
+            </div>
+
+            <button onclick="login()">Login</button>
+            <p class="switch-link" onclick="openSignup()">Create an account</p>
+            <p class="switch-link" onclick="resetPassword()">Forgot Password?</p>
+        </div>
+    </div>
+
+    <!-- SIGNUP MODAL -->
+    <div id="signupModal" class="modal">
+        <div class="modal-content">
+            <h2>Create Account</h2>
+
+            <input id="signupEmail" type="email" placeholder="Email">
+
+            <div class="password-wrapper">
+                <input id="signupPassword" type="password" placeholder="Password">
+                <span class="toggle-eye" onclick="togglePassword('signupPassword', this)">👁️</span>
+            </div>
+
+            <button onclick="signup()">Sign Up</button>
+            <p class="switch-link" onclick="openLogin()">Already have an account?</p>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"
+         style="position:fixed;top:20px;right:20px;padding:12px 20px;background:#4facfe;color:black;
+         border-radius:6px;display:none;font-weight:bold;z-index:30000;">
+    </div>
+
+    <script>
+
+        // ---------------- MODAL HANDLING ----------------
+        const loginModal = document.getElementById("loginModal");
+        const signupModal = document.getElementById("signupModal");
+
+        document.getElementById("loginBtn").onclick = () => loginModal.style.display = "flex";
+
+        function openSignup() { loginModal.style.display = "none"; signupModal.style.display = "flex"; }
+        function openLogin() { signupModal.style.display = "none"; loginModal.style.display = "flex"; }
+
+        window.onclick = (event) => {
+            if (event.target === loginModal) loginModal.style.display = "none";
+            if (event.target === signupModal) signupModal.style.display = "none";
+        };
+
+        // ---------------- FIREBASE CONFIG ----------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyD2E-b2n4OuJINYhklp4dPA9NTEBfcGukU",
+            authDomain: "celestium-bdc0f.firebaseapp.com",
+            projectId: "celestium-bdc0f",
+            storageBucket: "celestium-bdc0f.appspot.com",
+            messagingSenderId: "658396275584",
+            appId: "1:658396275584:web:f261e5730d43f5d8e6d765",
+            measurementId: "G-GNZ9GKDSZN"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // ---------------- SIGNUP ----------------
+        function signup() {
+            const email = document.getElementById("signupEmail").value;
+            const password = document.getElementById("signupPassword").value;
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    userCredential.user.sendEmailVerification()
+                        .then(() => showMessage("Verification email sent!"))
+                        .catch(err => showMessage(err.message));
+
+                    signupModal.style.display = "none";
+                    loginModal.style.display = "flex";
+                })
+                .catch(err => showMessage(err.message));
+        }
+
+        // ---------------- LOGIN ----------------
+        function login() {
+            const email = document.getElementById("loginEmail").value;
+            const password = document.getElementById("loginPassword").value;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(userCredential => {
+                    if (!userCredential.user.emailVerified) {
+                        showMessage("Verify your email first.");
+                        auth.signOut();
+                        return;
+                    }
+                    showMessage("Login successful!");
+                    window.location.href = "/dashboard";
+                })
+                .catch(err => showMessage(err.message));
+        }
+
+        // ---------------- RESET PASSWORD ----------------
+        function resetPassword() {
+            const email = document.getElementById("loginEmail").value;
+            if (!email) return showMessage("Enter your email first!");
+
+            auth.sendPasswordResetEmail(email)
+                .then(() => showMessage("Reset mail sent!"))
+                .catch(err => showMessage(err.message));
+        }
+
+        // ---------------- UTILITY ----------------
+        function showMessage(msg) {
+            const toast = document.getElementById("toast");
+            toast.innerText = msg;
+            toast.style.display = "block";
+            setTimeout(() => toast.style.display = "none", 3000);
+        }
+
+        function togglePassword(id, eye) {
+            const input = document.getElementById(id);
+            input.type = input.type === "password" ? "text" : "password";
+            eye.textContent = input.type === "password" ? "👁️" : "🙈";
+        }
+
+    </script>
+
+</body>
+</html>
