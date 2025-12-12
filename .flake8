@@ -1,0 +1,10 @@
+[flake8]
+exclude =
+    venv,
+    .venv,
+    env,
+    .env,
+    __pycache__,
+    .git,
+    node_modules
+max-line-length = 88
