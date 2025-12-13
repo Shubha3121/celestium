@@ -34,7 +34,19 @@
         #run-mission-btn:hover { background: #55f099; }
         #reset-btn { background: #f39c12; color: #000; }
         
-        .legend-area { background: #161622; padding: 20px; border-radius: 8px; border: 1px solid #333; }
+        .legend-area {
+    background: #161622;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #333;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    min-height: 420px; /* 🔑 reserves space */
+}
+
         .legend-area h3 { color: #ffcc00; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 0; }
         .legend-item { margin-bottom: 10px; }
         .legend-code { font-weight: bold; color: #00f2fe; margin-right: 10px; font-family: monospace; }
@@ -43,7 +55,48 @@
         .status-success { background: #214332; color: #2ecc71; border: 1px solid #2ecc71; }
         .status-failed, .status-incomplete { background: #432121; color: #e74c3c; border: 1px solid #e74c3c; }
         .output-message { margin-top: 10px; font-weight: normal; font-size: 1rem; color: #ddd; }
-        
+        /* ================= FORCE MARS GRID VISIBILITY ================= */
+
+.mars-grid {
+    display: grid !important;
+
+    grid-template-columns: repeat(4, 64px);
+    grid-template-rows: repeat(4, 64px);
+    gap: 12px;
+
+    width: max-content;
+    height: max-content;
+
+    margin: 20px auto;
+
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px;
+    border-radius: 10px;
+}
+
+/* Grid cells */
+.mars-cell {
+    width: 64px;
+    height: 64px;
+
+    background: #0d0d1a;
+    border: 1px solid #444;
+    border-radius: 8px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 1.7rem;
+}
+.keyboard-hint {
+    margin-top: 12px;
+    font-size: 0.9rem;
+    color: #aaa;
+    text-align: center;
+}
+
+
     </style>
 </head>
 <body>
@@ -51,45 +104,94 @@
     <nav class="navbar">
         <div class="logo">Celestium</div>
         <div class="nav-links">
-            <a href="/">Home</a>
+            <a href="/index.html">Home</a>
             <a href="/universe">Universe Explorer</a>
             <a href="/lessons">LearnCore</a>
             <a href="/quizzes">Quiz Zone</a>
+            <a href="/missions">Mission Builder</a>
             <a href="/dashboard">Dashboard</a>
+            <a href="#" id="loginBtn">Login</a>
         </div>
     </nav>
 
-    <div class="mission-container">
-        <h1 class="section-title">Mission Builder</h1>
-        <p class="subtitle">Design, Simulate, and Test Rover Command Sequences for Mars Exploration.</p>
+  <div class="mission-container">
 
-        <div class="mission-grid">
-            
-            <div class="command-input-area">
-                <h3>Rover Command Sequence</h3>
-                <textarea id="command-list" placeholder="Enter commands separated by new lines or spaces (e.g., F R F A)"></textarea>
-                
-                <div class="controls">
-                    <button id="run-mission-btn">Run Mission Simulation</button>
-                    <button id="reset-btn">Reset</button>
-                </div>
-            </div>
+    <h1 class="section-title">🚀 Mission Builder</h1>
+    <p class="subtitle">
+        Program a Mars Rover mission using real command logic inspired by NASA operations.
+    </p>
 
-            <div class="legend-area">
-                <h3>Command Legend (4x4 Grid)</h3>
-                <div class="legend-item"><span class="legend-code">F</span> - Move *Forward* (Y + 1)</div>
-                <div class="legend-item"><span class="legend-code">R</span> - Move *Right* (X + 1)</div>
-                <div class="legend-item"><span class="legend-code">A</span> - *Analyze* Sample (No movement)</div>
-                <hr style="border-color:#333;">
-                <div class="legend-item" style="color:#2ecc71;">*Goal:* Reach (3, 2) (Sample Point 2)</div>
-                <div class="legend-item" style="color:#e74c3c;">*Obstacle:* Rocks at (2, 0) and (1, 1)</div>
-                <div class="legend-item">*Start:* (0, 0)</div>
+    <!-- MISSION BRIEFING -->
+    <div class="mission-brief">
+        <h3>📡 Mission Briefing: ARES-1</h3>
+        <p>
+            The rover has landed on Mars. Ancient water traces are detected at a nearby site.
+            Your task is to safely navigate the rover, analyze the terrain, and reach the target.
+        </p>
+    </div>
+
+    <div class="mission-grid">
+
+        <!-- COMMAND PANEL -->
+        <div class="command-input-area">
+            <h3>🧠 Rover Command Program</h3>
+
+            <textarea id="command-list"
+                placeholder="Example:
+F
+F
+R
+A
+R
+F"></textarea>
+<div class="rover-controls">
+    <button id="btn-forward">⬆ Forward</button>
+    <button id="btn-right">➡ Right</button>
+    <button id="btn-analyze">🔍 Analyze</button>
+</div>
+<div class="keyboard-hint">
+    🎮 Controls:
+    <strong>W</strong> = Forward,
+    <strong>D</strong> = Right,
+    <strong>A</strong> = Analyze,
+    <strong>Backspace</strong> = Undo
+</div>
+
+
+
+            <div class="controls">
+                <button id="run-mission-btn">▶ Run Mission</button>
+                <button id="reset-btn">⟲ Reset</button>
             </div>
         </div>
 
-        
-      <div id="simulation-output" class="simulation-output" style="display: none;">
+        <!-- MARS MAP -->
+       <!--- <div class="legend-area">
+            <h3>🗺 Mars Terrain Map (4 × 4)</h3>
+
+            <div class="mars-grid" id="mars-grid"></div>
+
+            <div class="legend-item"><span class="legend-code">🚗</span> Rover Start</div>
+            <div class="legend-item"><span class="legend-code">🪨</span> Rock Obstacle</div>
+            <div class="legend-item"><span class="legend-code">💧</span> Water Sample</div>
+        </div>
+        <div class="legend-area">-->
+    <h3>🗺 Mars Terrain Map (4 × 4)</h3>
+
+    <div class="mars-grid" id="mars-grid"></div>
+
+    <div class="legend-item">🚗 Rover Start</div>
+    <div class="legend-item">🪨 Rock Obstacle</div>
+    <div class="legend-item">💧 Water Sample</div>
+</div>
+
+
     </div>
+
+    <div id="simulation-output" class="simulation-output" style="display:none;"></div>
+
+</div>
+
 
 <div id="path-log-container" style="margin-top: 30px; display: none;">
     <h3 style="color:#00f2fe; border-bottom: 1px solid #00f2fe; padding-bottom: 10px;">Rover Path Log</h3>
@@ -116,18 +218,17 @@
         document.getElementById('run-mission-btn').addEventListener('click', runMission);
         document.getElementById('reset-btn').addEventListener('click', resetSimulation);
 
-        function resetSimulation() {
-            document.getElementById('command-list').value = '';
-            const output = document.getElementById('simulation-output');
-            const logContainer = document.getElementById('path-log-container');
-            
-            output.style.display = 'none';
-            output.className = 'simulation-output';
-            
-            // Also hide and clear the new path log area
-            logContainer.style.display = 'none';
-            document.querySelector('#path-log-table tbody').innerHTML = '';
-        }
+       function resetSimulation() {
+    document.getElementById('command-list').value = '';
+
+    roverX = 0;
+    roverY = 0;
+    renderGrid(roverX, roverY);
+
+    document.getElementById('simulation-output').style.display = 'none';
+    document.getElementById('path-log-container').style.display = 'none';
+}
+
 
         async function runMission() {
             const commandListElem = document.getElementById('command-list');
@@ -220,6 +321,135 @@
         }
     }); // End of DOMContentLoaded listener
 </script>
+<script>
+    // --- BROWIE CHALLENGE: CHAOS MODE STATE MANAGER ---
+    
+    // 1. Initial Check: Load state from local storage on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const chaosEnabled = localStorage.getItem('chaosMode') === 'true';
+        const chaosToggleBtn = document.getElementById('chaos-mode-toggle');
+
+        if (chaosEnabled) {
+            document.body.classList.add('chaos-mode-active');
+            chaosToggleBtn.innerText = 'EXIT CHAOS MODE';
+        } else {
+            chaosToggleBtn.innerText = 'CHAOS MODE';
+        }
+        // Make the button visible for the demo
+        chaosToggleBtn.style.display = 'block'; 
+
+        // 2. Toggle Handler
+        chaosToggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const newState = !document.body.classList.contains('chaos-mode-active');
+            
+            if (newState) {
+                document.body.classList.add('chaos-mode-active');
+                localStorage.setItem('chaosMode', 'true');
+                chaosToggleBtn.innerText = 'EXIT CHAOS MODE';
+            } else {
+                document.body.classList.remove('chaos-mode-active');
+                localStorage.setItem('chaosMode', 'false');
+                chaosToggleBtn.innerText = 'CHAOS MODE';
+            }
+        });
+    });
+</script>
+<script>
+/* ================= MARS GRID RENDER (FINAL) ================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+    const marsGrid = document.getElementById("mars-grid");
+
+    const terrain = [
+        ["R", "", "X", ""],
+        ["", "X", "", ""],
+        ["", "", "", "G"],
+        ["", "", "", ""]
+    ];
+
+    function renderGrid(roverX = 0, roverY = 0) {
+        marsGrid.innerHTML = "";
+
+        for (let y = 3; y >= 0; y--) {
+            for (let x = 0; x < 4; x++) {
+                const cell = document.createElement("div");
+                cell.className = "mars-cell";
+
+                if (x === roverX && y === roverY) {
+                    cell.textContent = "🚗";
+                    cell.style.background = "#214332";
+                } else if (terrain[y][x] === "X") {
+                    cell.textContent = "🪨";
+                    cell.style.background = "#432121";
+                } else if (terrain[y][x] === "G") {
+                    cell.textContent = "💧";
+                    cell.style.background = "#3a2f0b";
+                }
+
+                marsGrid.appendChild(cell);
+            }
+        }
+    }
+
+    renderGrid();
+});
+</script>
+
+<script>
+/* ================= KEYBOARD CONTROLS ================= */
+
+document.addEventListener("keydown", (e) => {
+    // Ignore typing inside textarea
+    if (e.target.tagName === "TEXTAREA") return;
+
+    const key = e.key.toLowerCase();
+
+    if (key === "w") {
+        handleCommand("F");
+    } 
+    else if (key === "d") {
+        handleCommand("R");
+    } 
+    else if (key === "a") {
+        handleCommand("A");
+    } 
+    else if (key === "backspace") {
+        undoLastCommand();
+        e.preventDefault();
+    }
+});
+
+function handleCommand(cmd) {
+    // Update rover position visually
+    if (cmd === "F") roverY++;
+    if (cmd === "R") roverX++;
+
+    // Append command
+    document.getElementById("command-list").value += cmd + "\n";
+
+    // Update grid
+    renderGrid(roverX, roverY);
+}
+
+function undoLastCommand() {
+    const box = document.getElementById("command-list");
+    const lines = box.value.trim().split("\n");
+
+    if (lines.length === 0) return;
+
+    const last = lines.pop();
+
+    // Reverse rover move
+    if (last === "F") roverY--;
+    if (last === "R") roverX--;
+
+    box.value = lines.join("\n") + (lines.length ? "\n" : "");
+    renderGrid(roverX, roverY);
+}
+</script>
+
+
 
 </body>
 </html>

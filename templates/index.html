@@ -23,7 +23,6 @@
             transition: 0.3s; }
         .btn:hover { background: #00f2fe; transform: scale(1.05); }
 
-        /* Modal styling */
         .modal {
             display:none; position: fixed; top:0; left:0; width:100%; height:100%;
             background: rgba(0,0,0,0.6); justify-content:center; align-items:center;
@@ -51,163 +50,336 @@
         .switch-link { cursor:pointer; margin-top:10px; color:#4facfe; }
     </style>
 
-    <!-- ONLY COMPAT SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-
 </head>
+<canvas id="chaos-stars"></canvas>
+
 <body>
 
-    <nav class="navbar">
-        <div class="logo">Celestium</div>
-        <div class="nav-links">
-            <a href="/">Home</a>
-            <a href="/universe">Universe Explorer</a>
-            <a href="/lessons">LearnCore</a>
-            <a href="/quizzes">Quiz Zone</a>
-            <a href="/missions">Mission Builder</a>
-            <a href="/dashboard">dashboard</a>
-            <a href="#" id="loginBtn">Login</a>
+<nav class="navbar">
+    <div class="logo">Celestium</div>
+    <div class="nav-links">
+        <a href="/index">Home</a>
+        <a href="/universe">Universe Explorer</a>
+        <a href="/lessons">LearnCore</a>
+        <a href="/quizzes">Quiz Zone</a>
+        <a href="/missions">Mission Builder</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="#" id="chaos-mode-toggle" class="nav-btn chaos-btn">CHAOS MODE</a>
+
+
+        <input
+    type="range"
+    id="chaosIntensity"
+    min="1"
+    max="5"
+    value="3"
+    title="Chaos Intensity"
+    style="margin-left:15px; width:120px; display:none;"
+>
+<a href="#" id="loginBtn" class="nav-btn login-btn">Login</a>
+<script>
+/* ============ CHAOS MODE + INTENSITY SLIDER ============ */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const chaosBtn = document.getElementById("chaos-mode-toggle");
+    const slider = document.getElementById("chaosIntensity");
+    const canvas = document.getElementById("chaos-stars");
+    const ctx = canvas.getContext("2d");
+
+    let stars = [];
+    let running = false;
+    let intensity = parseInt(localStorage.getItem("chaosIntensity")) || 3;
+
+    slider.value = intensity;
+
+    function resize() {
+        canvas.width = innerWidth;
+        canvas.height = innerHeight;
+    }
+    resize();
+    addEventListener("resize", resize);
+
+    class Star {
+        constructor() { this.reset(); }
+        reset() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * -canvas.height;
+            this.size = Math.random() * (intensity + 2);
+            this.speed = Math.random() * (intensity * 0.8) + 0.5;
+        }
+        update() {
+            this.y += this.speed;
+            if (this.y > canvas.height) this.reset();
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(0,255,255,0.8)";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#00ffff";
+            ctx.fill();
+        }
+    }
+
+    function buildStars() {
+        stars = [];
+        const count = intensity * 40;
+        for (let i = 0; i < count; i++) stars.push(new Star());
+    }
+
+    function animate() {
+        if (!running) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        stars.forEach(s => { s.update(); s.draw(); });
+        requestAnimationFrame(animate);
+    }
+
+    function enableChaos() {
+        document.body.classList.add("chaos-mode-active");
+        chaosBtn.innerText = "EXIT CHAOS MODE";
+        slider.style.display = "inline-block";
+        localStorage.setItem("chaosMode", "true");
+
+        running = true;
+        buildStars();
+        animate();
+    }
+
+    function disableChaos() {
+        document.body.classList.remove("chaos-mode-active");
+        chaosBtn.innerText = "CHAOS MODE";
+        slider.style.display = "none";
+        localStorage.setItem("chaosMode", "false");
+
+        running = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    chaosBtn.onclick = (e) => {
+        e.preventDefault();
+        document.body.classList.contains("chaos-mode-active")
+            ? disableChaos()
+            : enableChaos();
+    };
+
+    slider.oninput = () => {
+        intensity = parseInt(slider.value);
+        localStorage.setItem("chaosIntensity", intensity);
+        if (running) buildStars();
+    };
+
+    // Restore state
+    if (localStorage.getItem("chaosMode") === "true") {
+        enableChaos();
+    }
+});
+</script>
+
+    </div>
+</nav>
+
+<div class="hero">
+    <h1>CELESTIUM</h1>
+    <p style="font-size:1.5rem;">Experience the Cosmos. Powered by NASA Data.</p>
+    <a href="/universe" class="btn">Launch Universe Explorer</a>
+</div>
+
+<!-- CHAOS FALLING STARS -->
+<canvas id="chaos-stars"></canvas>
+
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <input id="loginEmail" type="email" placeholder="Email">
+        <div class="password-wrapper">
+            <input id="loginPassword" type="password" placeholder="Password">
+            <span class="toggle-eye" onclick="togglePassword('loginPassword', this)">👁</span>
         </div>
-    </nav>
-
-    <div class="hero">
-        <h1>CELESTIUM</h1>
-        <p style="font-size: 1.5rem;">Experience the Cosmos. Powered by NASA Data.</p>
-        <a href="/universe" class="btn">Launch Universe Explorer</a>
+        <button onclick="login()">Login</button>
+        <p class="switch-link" onclick="openSignup()">Create an account</p>
+        <p class="switch-link" onclick="resetPassword()">Forgot Password?</p>
     </div>
+</div>
 
-    <!-- LOGIN MODAL -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <h2>Login</h2>
-
-            <input id="loginEmail" type="email" placeholder="Email">
-
-            <div class="password-wrapper">
-                <input id="loginPassword" type="password" placeholder="Password">
-                <span class="toggle-eye" onclick="togglePassword('loginPassword', this)">👁️</span>
-            </div>
-
-            <button onclick="login()">Login</button>
-            <p class="switch-link" onclick="openSignup()">Create an account</p>
-            <p class="switch-link" onclick="resetPassword()">Forgot Password?</p>
+<div id="signupModal" class="modal">
+    <div class="modal-content">
+        <h2>Create Account</h2>
+        <input id="signupEmail" type="email" placeholder="Email">
+        <div class="password-wrapper">
+            <input id="signupPassword" type="password" placeholder="Password">
+            <span class="toggle-eye" onclick="togglePassword('signupPassword', this)">👁</span>
         </div>
+        <button onclick="signup()">Sign Up</button>
+        <p class="switch-link" onclick="openLogin()">Already have an account?</p>
     </div>
+</div>
 
-    <!-- SIGNUP MODAL -->
-    <div id="signupModal" class="modal">
-        <div class="modal-content">
-            <h2>Create Account</h2>
+<div id="toast" style="position:fixed;top:20px;right:20px;padding:12px 20px;background:#4facfe;color:black;border-radius:6px;display:none;font-weight:bold;z-index:30000;"></div>
 
-            <input id="signupEmail" type="email" placeholder="Email">
+<script>
+firebase.initializeApp({
+    apiKey: "AIzaSyD2E-b2n4OuJINYhklp4dPA9NTEBfcGukU",
+    authDomain: "celestium-bdc0f.firebaseapp.com",
+    projectId: "celestium-bdc0f",
+    appId: "1:658396275584:web:f261e5730d43f5d8e6d765"
+});
+const auth = firebase.auth();
 
-            <div class="password-wrapper">
-                <input id="signupPassword" type="password" placeholder="Password">
-                <span class="toggle-eye" onclick="togglePassword('signupPassword', this)">👁️</span>
-            </div>
+loginBtn.onclick = () => loginModal.style.display = "flex";
 
-            <button onclick="signup()">Sign Up</button>
-            <p class="switch-link" onclick="openLogin()">Already have an account?</p>
-        </div>
-    </div>
+function openSignup(){ loginModal.style.display="none"; signupModal.style.display="flex"; }
+function openLogin(){ signupModal.style.display="none"; loginModal.style.display="flex"; }
 
-    <!-- Toast -->
-    <div id="toast"
-         style="position:fixed;top:20px;right:20px;padding:12px 20px;background:#4facfe;color:black;
-         border-radius:6px;display:none;font-weight:bold;z-index:30000;">
-    </div>
+function signup(){
+    auth.createUserWithEmailAndPassword(
+        signupEmail.value, signupPassword.value
+    ).then(u=>{
+        u.user.sendEmailVerification();
+        showMessage("Verification email sent!");
+        openLogin();
+    }).catch(e=>showMessage(e.message));
+}
 
-    <script>
-
-        // ---------------- MODAL HANDLING ----------------
-        const loginModal = document.getElementById("loginModal");
-        const signupModal = document.getElementById("signupModal");
-
-        document.getElementById("loginBtn").onclick = () => loginModal.style.display = "flex";
-
-        function openSignup() { loginModal.style.display = "none"; signupModal.style.display = "flex"; }
-        function openLogin() { signupModal.style.display = "none"; loginModal.style.display = "flex"; }
-
-        window.onclick = (event) => {
-            if (event.target === loginModal) loginModal.style.display = "none";
-            if (event.target === signupModal) signupModal.style.display = "none";
-        };
-
-        // ---------------- FIREBASE CONFIG ----------------
-        const firebaseConfig = {
-            apiKey: "AIzaSyD2E-b2n4OuJINYhklp4dPA9NTEBfcGukU",
-            authDomain: "celestium-bdc0f.firebaseapp.com",
-            projectId: "celestium-bdc0f",
-            storageBucket: "celestium-bdc0f.appspot.com",
-            messagingSenderId: "658396275584",
-            appId: "1:658396275584:web:f261e5730d43f5d8e6d765",
-            measurementId: "G-GNZ9GKDSZN"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        // ---------------- SIGNUP ----------------
-        function signup() {
-            const email = document.getElementById("signupEmail").value;
-            const password = document.getElementById("signupPassword").value;
-
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(userCredential => {
-                    userCredential.user.sendEmailVerification()
-                        .then(() => showMessage("Verification email sent!"))
-                        .catch(err => showMessage(err.message));
-
-                    signupModal.style.display = "none";
-                    loginModal.style.display = "flex";
-                })
-                .catch(err => showMessage(err.message));
+function login(){
+    auth.signInWithEmailAndPassword(
+        loginEmail.value, loginPassword.value
+    ).then(u=>{
+        if(!u.user.emailVerified){
+            showMessage("Verify email first!");
+            auth.signOut();
+            return;
         }
+        window.location="/dashboard";
+    }).catch(e=>showMessage(e.message));
+}
 
-        // ---------------- LOGIN ----------------
-        function login() {
-            const email = document.getElementById("loginEmail").value;
-            const password = document.getElementById("loginPassword").value;
+function resetPassword(){
+    auth.sendPasswordResetEmail(loginEmail.value)
+        .then(()=>showMessage("Reset email sent"))
+        .catch(e=>showMessage(e.message));
+}
 
-            auth.signInWithEmailAndPassword(email, password)
-                .then(userCredential => {
-                    if (!userCredential.user.emailVerified) {
-                        showMessage("Verify your email first.");
-                        auth.signOut();
-                        return;
-                    }
-                    showMessage("Login successful!");
-                    window.location.href = "/dashboard";
-                })
-                .catch(err => showMessage(err.message));
+function showMessage(m){
+    toast.innerText=m; toast.style.display="block";
+    setTimeout(()=>toast.style.display="none",3000);
+}
+
+function togglePassword(id,eye){
+    const i=document.getElementById(id);
+    i.type=i.type==="password"?"text":"password";
+}
+</script>
+<script>
+/* ========= CHAOS MODE + STARS + INTENSITY (FINAL FIX) ========= */
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const chaosBtn = document.getElementById("chaos-mode-toggle");
+    const slider = document.getElementById("chaosIntensity");
+    const canvas = document.getElementById("chaos-stars");
+    const ctx = canvas.getContext("2d");
+
+    let stars = [];
+    let intensity = parseInt(localStorage.getItem("chaosIntensity")) || 3;
+    let chaosOn = false;
+
+    slider.value = intensity;
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    class Star {
+        constructor() {
+            this.reset();
         }
-
-        // ---------------- RESET PASSWORD ----------------
-        function resetPassword() {
-            const email = document.getElementById("loginEmail").value;
-            if (!email) return showMessage("Enter your email first!");
-
-            auth.sendPasswordResetEmail(email)
-                .then(() => showMessage("Reset mail sent!"))
-                .catch(err => showMessage(err.message));
+        reset() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * -canvas.height;
+            this.size = Math.random() * (intensity * 1.5) + 1.5;
+            this.speed = Math.random() * (intensity * 0.8) + 0.6;
         }
-
-        // ---------------- UTILITY ----------------
-        function showMessage(msg) {
-            const toast = document.getElementById("toast");
-            toast.innerText = msg;
-            toast.style.display = "block";
-            setTimeout(() => toast.style.display = "none", 3000);
+        update() {
+            this.y += this.speed;
+            if (this.y > canvas.height) this.reset();
         }
-
-        function togglePassword(id, eye) {
-            const input = document.getElementById(id);
-            input.type = input.type === "password" ? "text" : "password";
-            eye.textContent = input.type === "password" ? "👁️" : "🙈";
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(0,255,255,0.85)";
+            ctx.shadowBlur = 8;           // 🔑 reduced (GPU safe)
+            ctx.shadowColor = "#00ffff";
+            ctx.fill();
         }
+    }
 
-    </script>
+    function buildStars() {
+        stars = [];
+        const count = intensity * 50;
+        for (let i = 0; i < count; i++) stars.push(new Star());
+    }
+
+    function animate() {
+        if (!chaosOn) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        stars.forEach(star => {
+            star.update();
+            star.draw();
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    function enableChaos() {
+        chaosOn = true;
+        document.body.classList.add("chaos-mode-active");
+        chaosBtn.innerText = "EXIT CHAOS MODE";
+        slider.style.display = "inline-block";
+
+        localStorage.setItem("chaosMode", "true");
+
+        buildStars();
+        animate();
+    }
+
+    function disableChaos() {
+        chaosOn = false;
+        document.body.classList.remove("chaos-mode-active");
+        chaosBtn.innerText = "CHAOS MODE";
+        slider.style.display = "none";
+
+        localStorage.setItem("chaosMode", "false");
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    chaosBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        chaosOn ? disableChaos() : enableChaos();
+    });
+
+    slider.addEventListener("input", () => {
+        intensity = parseInt(slider.value);
+        localStorage.setItem("chaosIntensity", intensity);
+        if (chaosOn) buildStars(); // 🔥 instant effect
+    });
+
+    /* Restore state */
+    if (localStorage.getItem("chaosMode") === "true") {
+        enableChaos();
+    }
+});
+</script>
+
+
 
 </body>
 </html>
+
