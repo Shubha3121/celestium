@@ -65,11 +65,10 @@ def generate_quiz_from_text(text):
                 options.append(f"{int(val * 0.8)}{suffix}")
                 options.append(f"{int(val * 1.2)}{suffix}")
                 options.append(f"{int(val * 0.5)}{suffix}")
-            except:
+            except (ValueError, IndexError):
                 options += ["Unknown", "0", "Infinite"]
 
             random.shuffle(options)
-            correct_idx = options.index(answer)
 
             questions.append(
                 {
@@ -89,8 +88,6 @@ def generate_quiz_from_text(text):
                     q_text = sentence_with_word.replace(word, "_______") + "?"
                     options = [word, "Galaxy", "Nebula", "Orbit"]
                     random.shuffle(options)
-                    correct_idx = options.index(word)
-
                     questions.append(
                         {
                             "text": q_text,
@@ -122,7 +119,8 @@ def get_recommendation():
     ]
 
     c.execute(
-        "SELECT topic, score, total_questions FROM quiz_results ORDER BY completed_at DESC LIMIT 1"
+        "SELECT topic, score, total_questions FROM quiz_results"
+        "ORDER BY completed_at DESC LIMIT 1"
     )
     last_result = c.fetchone()
     conn.close()
@@ -131,7 +129,8 @@ def get_recommendation():
         return jsonify(
             {
                 "next_topic": sequence[0],
-                "reason": "Welcome! Start your journey with the core of our system: The Sun.",
+                "reason": "Welcome! Start your journey with the"
+                "core of our system: The Sun.",
             }
         )
 
@@ -143,7 +142,9 @@ def get_recommendation():
         return jsonify(
             {
                 "next_topic": topic,
-                "reason": f"Your score was {mastery:.0f}%. Let's re-read the lesson on {topic} for a deeper understanding.",
+                "reason": f"Your score was {mastery:.0f}%."
+                f"Let's re-read the lesson on {topic}"
+                "for a deeper understanding.",
             }
         )
 
@@ -152,7 +153,8 @@ def get_recommendation():
         return jsonify(
             {
                 "next_topic": next_topic,
-                "reason": f"Excellent! You mastered {topic}. Time to progress to {next_topic}.",
+                "reason": f"Excellent! You mastered {topic}."
+                f"Time to progress to {next_topic}.",
             }
         )
 
@@ -160,7 +162,10 @@ def get_recommendation():
         return jsonify(
             {
                 "next_topic": "Mission Builder",
-                "reason": "You've made great progress! Try a simulated mission for a practical challenge.",
+                "reason": (
+                    "You've made great progress! "
+                    "Try a simulated mission for a practical challenge."
+                ),
             }
         )
 
@@ -308,7 +313,8 @@ def get_quiz_history():
 
     # Select all historical quiz data
     c.execute(
-        "SELECT topic, score, total_questions, completed_at FROM quiz_results ORDER BY completed_at DESC"
+        """SELECT topic, score, total_questions,
+        completed_at FROM quiz_results ORDER BY completed_at DESC"""
     )
     history = c.fetchall()
     conn.close()
@@ -373,7 +379,9 @@ def simulate_mission():
         if cmd in ["F", "R"]:
             if not (0 <= new_x < 4 and 0 <= new_y < 4):
                 final_status = "Failed"
-                final_message = f"Rover drove off the map at ({new_x}, {new_y}) after command {cmd}!"
+                final_message = f"Rover drove off the map at ({new_x},"
+                f"{new_y})"
+                f"after command {cmd}!"
                 path_log.append(
                     {
                         "command": cmd,
